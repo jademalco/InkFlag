@@ -1,0 +1,9 @@
+# Ignore build artifacts
+bin/
+
+# IDE files
+.vscode/
+
+# OS files
+Thumbs.db
+.DS_Store
