@@ -9,13 +9,14 @@ public class Main {
         window.setResizable(false);
         window.setTitle("InkFlag");
 
-        GamePanel gamePanel = new GamePanel();
-        window.add(gamePanel);
+        MainMenu mainMenu = new MainMenu();
+
+        window.add(mainMenu);
         window.pack();
 
         window.setLocationRelativeTo(null);
         window.setVisible(true);
 
-        gamePanel.startGameThread();
+        //gamePanel.startGameThread();
     }
 }

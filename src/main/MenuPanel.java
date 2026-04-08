@@ -27,8 +27,8 @@ public class MenuPanel extends JPanel {
     private int page = 0;
 
     // Text fields
-    private JTextField p1NameField = new JTextField("Player 1", 10);
-    private JTextField p2NameField = new JTextField("Player 2", 10);
+    private final JTextField p1NameField = new JTextField("Player 1", 10);
+    private final JTextField p2NameField = new JTextField("Player 2", 10);
 
     private static final Color[] TRAIL_COLORS = {
         new Color(0xF23F3A),
@@ -74,9 +74,9 @@ public class MenuPanel extends JPanel {
     private void buildPage() {
         removeAll();
         switch (page) {
-            case 0: buildPlayerPage(true);  break;
-            case 1: buildPlayerPage(false); break;
-            case 2: buildLevelPage();       break;
+            case 0 -> buildPlayerPage(true);
+            case 1 -> buildPlayerPage(false);
+            case 2 -> buildLevelPage();
         }
         revalidate();
         repaint();
@@ -116,6 +116,7 @@ public class MenuPanel extends JPanel {
                 isP1 ? (p1ColorIdx == i) : (p2ColorIdx == i), accentColor);
             swatch.setBounds(cx, 205, 70, 55);
             swatch.addMouseListener(new MouseAdapter() {
+                @Override
                 public void mouseClicked(MouseEvent e) {
                     if (isP1) { p1ColorIdx = idx; p1Trail = TRAIL_COLORS[idx]; }
                     else       { p2ColorIdx = idx; p2Trail = TRAIL_COLORS[idx]; }
@@ -173,6 +174,7 @@ public class MenuPanel extends JPanel {
             JPanel card = levelCard(levelTitles[i], levelDescs[i], levelColors[i], sel);
             card.setBounds(w/2 - 220, 110 + i * 115, 440, 100);
             card.addMouseListener(new MouseAdapter() {
+                @Override
                 public void mouseClicked(MouseEvent e) { selectedLevel = lvl; buildPage(); }
             });
             add(card);
@@ -293,6 +295,10 @@ public class MenuPanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         // White background — nothing extra needed
+    }
+
+    public JTextField getP2NameField() {
+        return p2NameField;
     }
 
     // ── Result DTO ────────────────────────────────────────────────────────────

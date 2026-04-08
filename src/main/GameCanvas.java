@@ -44,7 +44,7 @@ public class GameCanvas extends JPanel implements Runnable {
     public int currentLevel;
     public Color p1Color, p2Color;
     public String p1Name, p2Name;
-    private MenuResult lastResult;
+    private final MenuResult lastResult;
 
     // ── Power-ups ─────────────────────────────────────────────────────────────
     private List<PowerUp> powerUps = new ArrayList<>();
@@ -216,9 +216,9 @@ public class GameCanvas extends JPanel implements Runnable {
 
     private void applyPowerUp(Player p, int owner, PowerUp pu) {
         switch (pu.type) {
-            case SPEED:       p.activateSpeed(); break;
-            case SPLASH_BOMB: applyRadiusInk(p.x + tileHalf(), p.y + tileHalf(), SPLASH_RADIUS, owner); break;
-            case BOMB:        eraseRadiusInk(p.x + tileHalf(), p.y + tileHalf(), BOMB_RADIUS, owner); break;
+            case SPEED -> p.activateSpeed();
+            case SPLASH_BOMB -> applyRadiusInk(p.x + tileHalf(), p.y + tileHalf(), SPLASH_RADIUS, owner);
+            case BOMB -> eraseRadiusInk(p.x + tileHalf(), p.y + tileHalf(), BOMB_RADIUS, owner);
         }
     }
 
