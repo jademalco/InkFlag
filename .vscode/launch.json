@@ -9,6 +9,13 @@
             "name": "Main",
             "request": "launch",
             "mainClass": "main.Main",
+            "projectName": "InkFlag-1_ac7cb2ad"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "main.Main",
             "projectName": "InkFlag_3ca65b49"
         },
         {

@@ -66,7 +66,7 @@ public class GameCanvas extends JPanel implements Runnable {
     private volatile boolean running = false;
 
     // ── Post-game overlay shown flag ──────────────────────────────────────────
-    private boolean overlayShown = false;
+    //private boolean overlayShown = false;
 
     public GameCanvas(MenuResult result, GamePanel gp) {
         this.gp = gp;
@@ -94,7 +94,6 @@ public class GameCanvas extends JPanel implements Runnable {
         gameOver         = false;
         timerAccumulator = 0;
         collisionCooldown = 0;
-        overlayShown     = false;
         powerUps.clear();
         state = State.PLAYING;
 
@@ -170,10 +169,12 @@ public class GameCanvas extends JPanel implements Runnable {
         if (state == State.PLAYING) {
             if (gameOver) {
                 state = State.GAME_OVER;
-                if (!overlayShown) {
-                    overlayShown = true;
-                    SwingUtilities.invokeLater(this::showPostGameOverlay);
-                }
+                running = false; // Stops the 60FPS loop from fighting the UI
+            
+                // Switch to the professional Results Screen instead of the buggy overlay
+                SwingUtilities.invokeLater(() -> {
+                    gp.showResults(lastResult, getCoverage());
+                });
                 return;
             }
 
@@ -395,92 +396,4 @@ public class GameCanvas extends JPanel implements Runnable {
         g2.drawString(text, cx - g2.getFontMetrics().stringWidth(text)/2, y);
     }
 
-    // ── Post-game overlay ─────────────────────────────────────────────────────
-
-    private void showPostGameOverlay() {
-        int[]  cov   = getCoverage();
-        int    total = maxScreenCol * maxScreenRow;
-        String winner = cov[0] > cov[1] ? p1Name + " Wins!" :
-                        cov[1] > cov[0] ? p2Name + " Wins!" : "It's a Draw!";
-        String score  = String.format("%s %d%%  —  %s %d%%",
-            p1Name, 100*cov[0]/total, p2Name, 100*cov[1]/total);
-        Color winColor = cov[0] > cov[1] ? p1Color : cov[1] > cov[0] ? p2Color : Color.DARK_GRAY;
-
-        // Full-screen semi-transparent overlay
-        JPanel overlay = new JPanel(null) {
-            @Override protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.setColor(new Color(255, 255, 255, 200));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            }
-        };
-        overlay.setOpaque(false);
-        overlay.setBounds(0, 0, screenWidth, screenHeight);
-
-        // Centered white card
-        int cw = 380, ch = 250;
-        JPanel card = new JPanel(null);
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 2));
-        card.setBounds(screenWidth/2 - cw/2, screenHeight/2 - ch/2, cw, ch);
-
-        JLabel winLbl = new JLabel(winner, SwingConstants.CENTER);
-        winLbl.setFont(new Font("Arial", Font.BOLD, 30));
-        winLbl.setForeground(winColor);
-        winLbl.setBounds(10, 14, cw-20, 38);
-        card.add(winLbl);
-
-        JLabel scoreLbl = new JLabel(score, SwingConstants.CENTER);
-        scoreLbl.setFont(new Font("Arial", Font.PLAIN, 14));
-        scoreLbl.setForeground(Color.DARK_GRAY);
-        scoreLbl.setBounds(10, 56, cw-20, 22);
-        card.add(scoreLbl);
-
-        JLabel askLbl = new JLabel("What would you like to do?", SwingConstants.CENTER);
-        askLbl.setFont(new Font("Arial", Font.PLAIN, 12));
-        askLbl.setForeground(Color.GRAY);
-        askLbl.setBounds(10, 82, cw-20, 18);
-        card.add(askLbl);
-
-        // Play Again
-        JButton playAgainBtn = postBtn("Play Again", new Color(0x00B487), Color.WHITE);
-        playAgainBtn.setBounds(20, 112, cw-40, 36);
-        playAgainBtn.addActionListener(e -> {
-            setLayout(null);
-            remove(overlay);
-            initGame();
-            repaint();
-            requestFocusInWindow();
-        });
-        card.add(playAgainBtn);
-
-        // Change Level
-        JButton levelBtn = postBtn("Change Level", new Color(0xFFC549), Color.DARK_GRAY);
-        levelBtn.setBounds(20, 156, cw-40, 36);
-        levelBtn.addActionListener(e -> gp.returnToMenu(true, lastResult));
-        card.add(levelBtn);
-
-        // Main Menu
-        JButton menuBtn = postBtn("Main Menu", new Color(0xF23F3A), Color.WHITE);
-        menuBtn.setBounds(20, 200, cw-40, 36);
-        menuBtn.addActionListener(e -> gp.returnToMenu(false, null));
-        card.add(menuBtn);
-
-        overlay.add(card);
-        setLayout(null);
-        add(overlay);
-        revalidate();
-        repaint();
-    }
-
-    private JButton postBtn(String text, Color bg, Color fg) {
-        JButton b = new JButton(text);
-        b.setFont(new Font("Arial", Font.BOLD, 14));
-        b.setBackground(bg);
-        b.setForeground(fg);
-        b.setFocusPainted(false);
-        b.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return b;
-    }
 }

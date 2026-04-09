@@ -41,9 +41,27 @@ public class GamePanel extends JPanel {
         repaint();
     }
 
+    public void showResults(MenuResult result, int[] scores) {
+        // 1. Properly dispose of the old game canvas
+        if (gameCanvas != null) {
+            gameCanvas.stopThread();
+            remove(gameCanvas);
+            gameCanvas = null;
+        }
+
+        // 2. Initialize the new Results Screen
+        // We pass 'this' at the end so it can access your playSound method
+        ResultsPanel resultsPanel = new ResultsPanel(result, scores, this::startGame, this::returnToMainMenu, this);
+    
+        add(resultsPanel, "results");
+        cardLayout.show(this, "results");
+    
+        revalidate();
+        repaint();
+    }
+
     private void returnToMainMenu() {
-        // Get the parent JFrame and swap GamePanel back to MainMenu
-        JFrame window = (JFrame) SwingUtilities.getWindowAncestor(this);
+    JFrame window = (JFrame) SwingUtilities.getWindowAncestor(this);
         if (window != null) {
             window.remove(this);
             MainMenu mainMenu = new MainMenu();
