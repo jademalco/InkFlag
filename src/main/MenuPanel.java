@@ -6,13 +6,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.*;
 import javax.swing.*;
 
 /**
  * MenuPanel — shown before the game starts.
  * Collects: character (boy/girl), trail color, player name, and level for each player.
  */
-public class MenuPanel extends JPanel {
+public final class MenuPanel extends JPanel {
+
+    private Clip bgMusic;
 
     // Callback fired when both players are ready
     private final Consumer<MenuResult> onReady;
@@ -62,6 +65,8 @@ public class MenuPanel extends JPanel {
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.WHITE);
 
+    
+
         // Load your actual files from res/
         try {
             p1bg = ImageIO.read(new File("res/p1bg.png"));
@@ -73,6 +78,7 @@ public class MenuPanel extends JPanel {
         // Start by pointing to the first background
         currentBG = p1bg;
 
+        playMenuMusic("bgmusic.wav");
         setLayout(null);
         buildPage();
     }
@@ -110,6 +116,7 @@ public class MenuPanel extends JPanel {
         homeBtn.setOpaque(false);
         homeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         homeBtn.addActionListener(e -> {
+            playSound("click.wav"); // <--- Play sound first
             if (onHome != null) {
                 onHome.run(); // Goes back to the Main Menu
             } else {
@@ -118,7 +125,7 @@ public class MenuPanel extends JPanel {
             buildPage();
         });
         add(homeBtn);
-        
+
         switch (page) {
             case 0 -> buildPlayerPage(true);
             case 1 -> buildPlayerPage(false);
@@ -220,6 +227,7 @@ public class MenuPanel extends JPanel {
         nextBtn.setOpaque(false);
         nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         nextBtn.addActionListener(e -> {
+            playSound("click.wav"); // <── Add this!
             page++;
             buildPage();
 
@@ -240,6 +248,7 @@ public class MenuPanel extends JPanel {
             backBtn.setOpaque(false);
             backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             backBtn.addActionListener(e -> {
+                playSound("click.wav"); // <── Add this!
                 page--;
                 buildPage();
                 currentBG = p1bg;
@@ -249,9 +258,9 @@ public class MenuPanel extends JPanel {
         }
 
         // Page indicator
-        JLabel pageInd = styledLabel("Step " + (page + 1) + " of 3", 13, Font.PLAIN, Color.GRAY);
-        pageInd.setBounds(w/2 - 50, h - 22, 100, 18);
-        add(pageInd);
+        //JLabel pageInd = styledLabel("Step " + (page + 1) + " of 3", 13, Font.PLAIN, Color.GRAY);
+        //pageInd.setBounds(w/2 - 50, h - 22, 100, 18);
+        //add(pageInd);
     }
 
     private void buildLevelPage() {
@@ -293,6 +302,7 @@ public class MenuPanel extends JPanel {
         backBtn.setOpaque(false);
         backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         backBtn.addActionListener(e -> {
+            playSound("click.wav"); // <── Add this!
             page = 1;
             buildPage();
             currentBG = p2bg;
@@ -319,9 +329,9 @@ public class MenuPanel extends JPanel {
         });
         add(playBtn);
 
-        JLabel pageInd = styledLabel("Step 3 of 3", 13, Font.PLAIN, Color.GRAY);
-        pageInd.setBounds(w/2 - 50, h - 22, 100, 18);
-        add(pageInd);
+        //JLabel pageInd = styledLabel("Step 3 of 3", 13, Font.PLAIN, Color.GRAY);
+        //pageInd.setBounds(w/2 - 50, h - 22, 100, 18);
+        //add(pageInd);
     }
 
     // ── Component helpers ─────────────────────────────────────────────────────
@@ -408,6 +418,56 @@ public class MenuPanel extends JPanel {
     public JTextField getP2NameField() {
         return p2NameField;
     }
+
+    private void playSound(String soundFile) {
+    try {
+        File file = new File("res/" + soundFile);
+        AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioIn);
+
+        // --- VOLUME CONTROL START ---
+        // Gain is measured in decibels. 
+        // 0.0 is normal, -10.0 is quieter, -20.0 is very quiet.
+        FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        gainControl.setValue(-15.0f); // Change -15.0 to -20.0 if it's still too loud
+        // --- VOLUME CONTROL END ---
+
+        clip.start();
+        
+        clip.addLineListener(event -> {
+            if (event.getType() == LineEvent.Type.STOP) {
+                clip.close();
+            }
+        });
+    } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+        System.err.println("Sound Error: " + e.getMessage());
+    }
+}   
+
+    public void playMenuMusic(String soundFile) {
+    // 1. Check if bgMusic is already running. 
+    // If it is, "return" (stop here) so we don't start a second copy.
+    if (bgMusic != null && bgMusic.isRunning()) {
+        return; 
+    }
+
+    try {
+        File file = new File("res/" + soundFile);
+        AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
+        bgMusic = AudioSystem.getClip();
+        bgMusic.open(audioIn);
+
+        FloatControl gainControl = (FloatControl) bgMusic.getControl(FloatControl.Type.MASTER_GAIN);
+        gainControl.setValue(-25.0f); 
+
+        bgMusic.loop(Clip.LOOP_CONTINUOUSLY); 
+        bgMusic.start();
+    } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+        System.err.println("Music Error: " + e.getMessage());
+    }
+}
+
 
     // ── Result DTO ────────────────────────────────────────────────────────────
 

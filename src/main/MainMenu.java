@@ -1,6 +1,9 @@
 package main;
 
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import javax.sound.sampled.*;
 import javax.swing.*;
 
 public class MainMenu extends JPanel {
@@ -28,6 +31,7 @@ public class MainMenu extends JPanel {
         
         // Add a simple action to test it
         playButton.addActionListener(e -> {
+            playSound("click.wav");
             // Find the main window (JFrame) that holds this menu
             JFrame window = (JFrame) SwingUtilities.getWindowAncestor(this);
 
@@ -61,6 +65,7 @@ public class MainMenu extends JPanel {
 
         // Placeholder action
         instrButton.addActionListener(e -> {
+            playSound("click.wav");
             JOptionPane.showMessageDialog(this, 
             "Instructions: \n- For player 1: Use WASD to move\n- For player 2: Use arrow keys to move\n- Collect the flags!", 
             "How to Play", 
@@ -74,6 +79,8 @@ public class MainMenu extends JPanel {
         JButton optionsButton = createFigmaButton("res/options.png", 345, 400, 110, 50);
 
         optionsButton.addActionListener(e -> {
+            playSound("click.wav");
+
             // For now, we'll just show a message. 
             // Later, this will open your settings panel!
             JOptionPane.showMessageDialog(this, 
@@ -119,5 +126,25 @@ public class MainMenu extends JPanel {
         btn.setOpaque(false);
         
         return btn;
+    }
+
+    private void playSound(String soundFile) {
+        try {
+            File file = new File("res/" + soundFile);
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            
+            // Volume adjustment
+            FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            gainControl.setValue(-20.0f); 
+
+            clip.start();
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) clip.close();
+            });
+        } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+            System.err.println("Sound Error: " + e.getMessage());
+        }
     }
 }
