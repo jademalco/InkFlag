@@ -4,11 +4,13 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import javax.imageio.ImageIO;
 import main.GameCanvas;
 import main.KeyHandler;
 
-public class Player extends Entity {
+public final class Player extends Entity {
 
     GameCanvas gc;
     KeyHandler keyH;
@@ -53,18 +55,23 @@ public class Player extends Entity {
     }
 
     public void getPlayerImage() {
-        try {
-            String folder = isPlayerOne ? "/Player/" : "/Player2/";
-            up     = ImageIO.read(getClass().getResourceAsStream(folder + "up.png"));
-            up1    = ImageIO.read(getClass().getResourceAsStream(folder + "up1.png"));
-            down   = ImageIO.read(getClass().getResourceAsStream(folder + "down.png"));
-            down1  = ImageIO.read(getClass().getResourceAsStream(folder + "down1.png"));
-            left   = ImageIO.read(getClass().getResourceAsStream(folder + "left.png"));
-            left1  = ImageIO.read(getClass().getResourceAsStream(folder + "left1.png"));
-            right  = ImageIO.read(getClass().getResourceAsStream(folder + "right.png"));
-            right1 = ImageIO.read(getClass().getResourceAsStream(folder + "right1.png"));
-        } catch (Exception e) {
-            // No sprites — will draw colored box
+        String folder = isPlayerOne ? "/Player/" : "/Player2/";
+        up     = loadImage(folder + "up.png");
+        up1    = loadImage(folder + "up1.png");
+        down   = loadImage(folder + "down.png");
+        down1  = loadImage(folder + "down1.png");
+        left   = loadImage(folder + "left.png");
+        left1  = loadImage(folder + "left1.png");
+        right  = loadImage(folder + "right.png");
+        right1 = loadImage(folder + "right1.png");
+    }
+
+    private BufferedImage loadImage(String path) {
+        try (InputStream stream = getClass().getResourceAsStream(path)) {
+            if (stream == null) return null;
+            return ImageIO.read(stream);
+        } catch (IOException e) {
+            return null;
         }
     }
 
@@ -116,10 +123,10 @@ public class Player extends Entity {
     public void draw(Graphics2D g2) {
         BufferedImage image = null;
         switch (direction) {
-            case "up":    image = (spriteNum == 1) ? up    : up1;    break;
-            case "down":  image = (spriteNum == 1) ? down  : down1;  break;
-            case "left":  image = (spriteNum == 1) ? left  : left1;  break;
-            case "right": image = (spriteNum == 1) ? right : right1; break;
+            case "up" -> image = (spriteNum == 1) ? up    : up1;
+            case "down" -> image = (spriteNum == 1) ? down  : down1;
+            case "left" -> image = (spriteNum == 1) ? left  : left1;
+            case "right" -> image = (spriteNum == 1) ? right : right1;
         }
 
         if (image == null) {

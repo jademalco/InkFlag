@@ -27,12 +27,12 @@ public class PowerUp {
     }
 
     public Color getColor() {
-        switch (type) {
-            case SPEED:       return new Color(255, 220, 0);   
-            case SPLASH_BOMB: return new Color(0, 200, 80);    
-            case BOMB:        return new Color(30, 30, 30);    
-            default:          return Color.WHITE;
-        }
+        return switch (type) {
+            case SPEED -> new Color(255, 220, 0);
+            case SPLASH_BOMB -> new Color(0, 200, 80);
+            case BOMB -> new Color(30, 30, 30);
+            default -> Color.WHITE;
+        };
     }
 
     public void draw(Graphics2D g2) {

@@ -289,7 +289,7 @@ public class Leaderboard {
     }
     
     // Game Record class
-    static class GameRecord implements Serializable {
+    public static class GameRecord implements Serializable {
         private static final long serialVersionUID = 1L;
         String p1Name, p2Name, winner;
         int p1Score, p2Score, level;

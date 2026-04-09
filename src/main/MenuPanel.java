@@ -2,7 +2,10 @@ package main;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.function.Consumer;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 /**
@@ -26,6 +29,11 @@ public class MenuPanel extends JPanel {
     // Menu page: 0=P1 setup  1=P2 setup  2=level select
     private int page = 0;
 
+    // Add these new fields here:
+    private final Image p1bg; // Your Player 1 background
+    private final Image p2bg; // Your Player 2 background
+    private Image currentBG; // The "active" background
+
     // Text fields
     private final JTextField p1NameField = new JTextField("Player 1", 10);
     private final JTextField p2NameField = new JTextField("Player 2", 10);
@@ -46,6 +54,18 @@ public class MenuPanel extends JPanel {
         this.onReady = onReady;
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.WHITE);
+
+        // Load your actual files from res/
+        try {
+            p1bg = ImageIO.read(new File("res/p1bg.png"));
+            p2bg = ImageIO.read(new File("res/p2bg.png"));
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to load menu background images", ex);
+        }
+
+        // Start by pointing to the first background
+        currentBG = p1bg;
+
         setLayout(null);
         buildPage();
     }
@@ -141,7 +161,15 @@ public class MenuPanel extends JPanel {
         String btnText = (page == 0) ? "Next → P2 Setup" : "Next → Level Select";
         JButton nextBtn = accentButton(btnText, accentColor);
         nextBtn.setBounds(w/2 - 110, h - 70, 220, 44);
-        nextBtn.addActionListener(e -> { page++; buildPage(); });
+        nextBtn.addActionListener(e -> {
+        page++;
+        buildPage();
+
+            if (page == 1) {
+            currentBG = p2bg;
+            repaint();
+            }
+        });
         add(nextBtn);
 
         // Page indicator
@@ -294,7 +322,9 @@ public class MenuPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // White background — nothing extra needed
+        if (currentBG != null) {
+            g.drawImage(currentBG, 0, 0, getWidth(), getHeight(), this);
+        }
     }
 
     public JTextField getP2NameField() {
