@@ -34,11 +34,23 @@ public class GamePanel extends JPanel {
 
     private void showMenu() {
         if (menuPanel != null) remove(menuPanel);
-        menuPanel = new MenuPanel(SCREEN_W, SCREEN_H, this::startGame);
+        menuPanel = new MenuPanel(SCREEN_W, SCREEN_H, this::startGame, this::returnToMainMenu);
         add(menuPanel, CARD_MENU);
         cardLayout.show(this, CARD_MENU);
         revalidate();
         repaint();
+    }
+
+    private void returnToMainMenu() {
+        // Get the parent JFrame and swap GamePanel back to MainMenu
+        JFrame window = (JFrame) SwingUtilities.getWindowAncestor(this);
+        if (window != null) {
+            window.remove(this);
+            MainMenu mainMenu = new MainMenu();
+            window.add(mainMenu);
+            window.revalidate();
+            window.repaint();
+        }
     }
 
     void startGame(MenuResult result) {
@@ -63,7 +75,7 @@ public class GamePanel extends JPanel {
             gameCanvas = null;
         }
         if (menuPanel != null) remove(menuPanel);
-        menuPanel = new MenuPanel(SCREEN_W, SCREEN_H, this::startGame);
+        menuPanel = new MenuPanel(SCREEN_W, SCREEN_H, this::startGame, this::returnToMainMenu);
         if (lastResult != null) menuPanel.prefill(lastResult);
         if (jumpToLevel)        menuPanel.goToLevelPage();
         add(menuPanel, CARD_MENU);

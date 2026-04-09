@@ -16,6 +16,8 @@ public class MenuPanel extends JPanel {
 
     // Callback fired when both players are ready
     private final Consumer<MenuResult> onReady;
+    private final Runnable onHome; // Callback to return to main menu
+
 
     // ── State ─────────────────────────────────────────────────────────────────
     private Color p1Trail    = new Color(0xF23F3A);
@@ -51,7 +53,12 @@ public class MenuPanel extends JPanel {
     };
 
     public MenuPanel(int width, int height, Consumer<MenuResult> onReady) {
+        this(width, height, onReady, null);
+    }
+
+    public MenuPanel(int width, int height, Consumer<MenuResult> onReady, Runnable onHome) {
         this.onReady = onReady;
+        this.onHome = onHome;
         setPreferredSize(new Dimension(width, height));
         setBackground(Color.WHITE);
 
@@ -93,6 +100,25 @@ public class MenuPanel extends JPanel {
 
     private void buildPage() {
         removeAll();
+
+        // Home button (top left) - Match the coordinates from buildPlayerPage
+        JButton homeBtn = new JButton(new ImageIcon("res/home.png"));
+        homeBtn.setBounds(20, 20, 50, 50); // Exact same spot as Step 1 & 2
+        homeBtn.setBorderPainted(false);
+        homeBtn.setContentAreaFilled(false);
+        homeBtn.setFocusPainted(false);
+        homeBtn.setOpaque(false);
+        homeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        homeBtn.addActionListener(e -> {
+            if (onHome != null) {
+                onHome.run(); // Goes back to the Main Menu
+            } else {
+                page = 0; // Fallback to Player 1 Setup
+            }
+            buildPage();
+        });
+        add(homeBtn);
+        
         switch (page) {
             case 0 -> buildPlayerPage(true);
             case 1 -> buildPlayerPage(false);
@@ -113,6 +139,24 @@ public class MenuPanel extends JPanel {
         title.setBounds(w/2 - 150, 40, 300, 40);
         add(title);
 
+        // Home button (top left)
+        JButton homeBtn = new JButton(new ImageIcon("res/home.png"));
+        homeBtn.setBounds(20, 20, 50, 50);
+        homeBtn.setBorderPainted(false);
+        homeBtn.setContentAreaFilled(false);
+        homeBtn.setFocusPainted(false);
+        homeBtn.setOpaque(false);
+        homeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        homeBtn.addActionListener(e -> {
+            if (onHome != null) {
+                onHome.run();
+            } else {
+                page = 0;
+                buildPage();
+            }
+        });
+        add(homeBtn);
+
         // Name field
         JLabel nameLabel = styledLabel("Name:", 16, Font.PLAIN, Color.DARK_GRAY);
         nameLabel.setBounds(w/2 - 140, 110, 80, 30);
@@ -128,13 +172,22 @@ public class MenuPanel extends JPanel {
         colorLabel.setBounds(w/2 - 140, 175, 120, 30);
         add(colorLabel);
 
+        // Color options
         int colorStartX = w/2 - 140;
         for (int i = 0; i < TRAIL_COLORS.length; i++) {
             final int idx = i;
             int cx = colorStartX + i * 80;
-            JPanel swatch = colorSwatch(TRAIL_COLORS[i], COLOR_NAMES[i],
-                isP1 ? (p1ColorIdx == i) : (p2ColorIdx == i), accentColor);
+
+            // ─── ADD THIS LINE HERE ───
+            boolean isTaken = (!isP1 && p1ColorIdx == idx);
+            // MODIFY THIS LINE (just add the 'isTaken' variable at the end)
+            JPanel swatch = colorSwatch(TRAIL_COLORS[i], COLOR_NAMES[i], 
+                isP1 ? (p1ColorIdx == i) : (p2ColorIdx == i), accentColor, isTaken);
+
             swatch.setBounds(cx, 205, 70, 55);
+
+            // ─── WRAP YOUR EXISTING MOUSE LISTENER IN THIS IF STATEMENT ───
+        if (!isTaken) {
             swatch.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -142,9 +195,10 @@ public class MenuPanel extends JPanel {
                     else       { p2ColorIdx = idx; p2Trail = TRAIL_COLORS[idx]; }
                     buildPage();
                 }
-            });
-            add(swatch);
+            }); 
         }
+        add(swatch);
+    }
 
         // Preview swatch
         Color previewColor = isP1 ? p1Trail : p2Trail;
@@ -158,19 +212,41 @@ public class MenuPanel extends JPanel {
         add(previewLabel);
 
         // Next button
-        String btnText = (page == 0) ? "Next → P2 Setup" : "Next → Level Select";
-        JButton nextBtn = accentButton(btnText, accentColor);
+        JButton nextBtn = new JButton(new ImageIcon("res/next.png"));
         nextBtn.setBounds(w/2 - 110, h - 70, 220, 44);
+        nextBtn.setBorderPainted(false);
+        nextBtn.setContentAreaFilled(false);
+        nextBtn.setFocusPainted(false);
+        nextBtn.setOpaque(false);
+        nextBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         nextBtn.addActionListener(e -> {
-        page++;
-        buildPage();
+            page++;
+            buildPage();
 
             if (page == 1) {
-            currentBG = p2bg;
-            repaint();
+                currentBG = p2bg;
+                repaint();
             }
         });
         add(nextBtn);
+
+        // Back button (only on Player 2 setup, left of Next button)
+        if (!isP1) {
+            JButton backBtn = new JButton(new ImageIcon("res/back.png"));
+            backBtn.setBounds(w/2 - 110 - 70, h - 70, 60, 44);
+            backBtn.setBorderPainted(false);
+            backBtn.setContentAreaFilled(false);
+            backBtn.setFocusPainted(false);
+            backBtn.setOpaque(false);
+            backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            backBtn.addActionListener(e -> {
+                page--;
+                buildPage();
+                currentBG = p1bg;
+                repaint();
+            });
+            add(backBtn);
+        }
 
         // Page indicator
         JLabel pageInd = styledLabel("Step " + (page + 1) + " of 3", 13, Font.PLAIN, Color.GRAY);
@@ -206,12 +282,32 @@ public class MenuPanel extends JPanel {
                 public void mouseClicked(MouseEvent e) { selectedLevel = lvl; buildPage(); }
             });
             add(card);
-        }
+        }        
 
-        Color playAccent = levelColors[selectedLevel - 1];
-        JButton playBtn = accentButton("▶  Play!", playAccent);
-        playBtn.setForeground(Color.WHITE);
+        JButton backBtn = new JButton(new ImageIcon("res/back.png"));
+        backBtn.setBounds(w/2 - 180, h - 70, 60, 44);
+        //backBtn.setBounds(groupX, buttonY, backWidth, 44);
+        backBtn.setBorderPainted(false);
+        backBtn.setContentAreaFilled(false);
+        backBtn.setFocusPainted(false);
+        backBtn.setOpaque(false);
+        backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backBtn.addActionListener(e -> {
+            page = 1;
+            buildPage();
+            currentBG = p2bg;
+            repaint();
+        });
+        add(backBtn);
+
+        JButton playBtn = new JButton(new ImageIcon("res/play.png"));
         playBtn.setBounds(w/2 - 110, h - 70, 220, 44);
+        //playBtn.setBounds(groupX + backWidth + gap, buttonY, playWidth, 44);
+        playBtn.setBorderPainted(false);
+        playBtn.setContentAreaFilled(false);
+        playBtn.setFocusPainted(false);
+        playBtn.setOpaque(false);
+        playBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         playBtn.addActionListener(e -> {
             MenuResult result = new MenuResult();
             result.p1Name  = p1NameField.getText().trim().isEmpty() ? "Player 1" : p1NameField.getText().trim();
@@ -222,11 +318,6 @@ public class MenuPanel extends JPanel {
             onReady.accept(result);
         });
         add(playBtn);
-
-        JButton backBtn = ghostButton("← Back");
-        backBtn.setBounds(20, h - 58, 100, 32);
-        backBtn.addActionListener(e -> { page--; buildPage(); });
-        add(backBtn);
 
         JLabel pageInd = styledLabel("Step 3 of 3", 13, Font.PLAIN, Color.GRAY);
         pageInd.setBounds(w/2 - 50, h - 22, 100, 18);
@@ -254,12 +345,21 @@ public class MenuPanel extends JPanel {
         tf.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
-    private JPanel colorSwatch(Color color, String name, boolean selected, Color accent) {
+    private JPanel colorSwatch(Color color, String name, boolean selected, Color accent, boolean isTaken) {
         JPanel p = new JPanel(new BorderLayout());
+
+        // ADDED: Visual logic to make it look "Disabled"
+    if (isTaken) {
+        p.setBackground(new Color(210, 210, 210)); // Light Gray
+        p.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    } else {
         p.setBackground(selected ? new Color(240, 240, 240) : Color.WHITE);
         p.setBorder(BorderFactory.createLineBorder(
             selected ? accent : new Color(200, 200, 200), selected ? 3 : 1));
-        p.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
+    // ADDED: Change the cursor so it doesn't look clickable
+    p.setCursor(Cursor.getPredefinedCursor(isTaken ? Cursor.DEFAULT_CURSOR : Cursor.HAND_CURSOR));
 
         JPanel dot = new JPanel();
         dot.setBackground(color);
@@ -273,28 +373,6 @@ public class MenuPanel extends JPanel {
         p.add(dot, BorderLayout.CENTER);
         p.add(lbl, BorderLayout.SOUTH);
         return p;
-    }
-
-    private JButton accentButton(String text, Color accent) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.BOLD, 16));
-        btn.setBackground(accent);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
-    }
-
-    private JButton ghostButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        btn.setBackground(Color.WHITE);
-        btn.setForeground(Color.DARK_GRAY);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createLineBorder(new Color(180, 180, 180), 1));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
     }
 
     private JPanel levelCard(String title, String desc, Color accent, boolean selected) {
