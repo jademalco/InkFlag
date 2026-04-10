@@ -5,11 +5,11 @@ import javax.swing.*;
 import main.MenuPanel.MenuResult;
 
 public class ResultsPanel extends JPanel {
+        
+    private Image bgImage = new ImageIcon("res/rbg.png").getImage();
 
     public ResultsPanel(MenuResult result, int[] scores, java.util.function.Consumer<MenuResult> onRematch, Runnable onMenu, GamePanel gp) {
-        // 1. Setup Panel
-        setLayout(null); 
-        setBackground(new Color(245, 245, 245)); // Light clean gray
+        setLayout(null);
         setPreferredSize(new Dimension(GamePanel.SCREEN_W, GamePanel.SCREEN_H));
 
         // 2. Calculate Stats
@@ -49,32 +49,75 @@ public class ResultsPanel extends JPanel {
         int btnH = 50;
         int centerX = (GamePanel.SCREEN_W / 2) - (btnW / 2);
 
-        // Rematch Button
-        JButton rematchBtn = createStyledBtn("PLAY AGAIN", new Color(0x00B487), centerX, 280, btnW, btnH);
-        rematchBtn.addActionListener(e -> onRematch.accept(result));
+        // New way (Replace "res/play_again.png" with your actual file names)
+        JButton rematchBtn = createCustomBtn("res/playagain.png", centerX, 280, btnW, btnH);
+        rematchBtn.addActionListener(e -> {
+            playSound("res/click.wav");
+            onRematch.accept(result);
+        });
         add(rematchBtn);
 
-        // Change Level (Goes back to Menu but jumps to level select)
-        JButton levelBtn = createStyledBtn("CHANGE LEVEL", new Color(0xFFC549), centerX, 350, btnW, btnH);
-        levelBtn.setForeground(Color.DARK_GRAY); // Make text dark for yellow button
-        levelBtn.addActionListener(e -> gp.returnToMenu(true, result));
+        JButton levelBtn = createCustomBtn("res/changelvl.png", centerX, 350, btnW, btnH);
+        levelBtn.addActionListener(e -> {
+            playSound("res/click.wav");
+            gp.returnToMenu(true, result);
+        });
         add(levelBtn);
 
-        // Main Menu Button
-        JButton menuBtn = createStyledBtn("EXIT TO MENU", new Color(0xF23F3A), centerX, 420, btnW, btnH);
-        menuBtn.addActionListener(e -> onMenu.run());
+        JButton menuBtn = createCustomBtn("res/backtomm.png", centerX, 420, btnW, btnH);
+        menuBtn.addActionListener(e -> {
+            playSound("res/click.wav");
+            onMenu.run();
+        });
         add(menuBtn);
+        }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (bgImage != null) {
+            g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
+        }
     }
 
-    private JButton createStyledBtn(String text, Color bg, int x, int y, int w, int h) {
-        JButton b = new JButton(text);
-        b.setBounds(x, y, w, h);
-        b.setBackground(bg);
-        b.setForeground(Color.WHITE);
-        b.setFont(new Font("Arial", Font.BOLD, 16));
-        b.setFocusPainted(false);
-        b.setBorder(BorderFactory.createEmptyBorder());
-        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return b;
+    private void playSound(String soundFile) {
+    try {
+        java.io.File file = new java.io.File(soundFile);
+        if (file.exists()) {
+            javax.sound.sampled.AudioInputStream audioInput = javax.sound.sampled.AudioSystem.getAudioInputStream(file);
+            javax.sound.sampled.Clip clip = javax.sound.sampled.AudioSystem.getClip();
+            clip.open(audioInput);
+            clip.start();
+        } else {
+            System.out.println("Sound file not found: " + soundFile);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+}
+
+    private JButton createCustomBtn(String imgPath, int x, int y, int w, int h) {
+    // 1. Load the image
+    ImageIcon icon = new ImageIcon(imgPath);
+    
+    // This gets the actual width and height of your PNG file
+    //int w = icon.getIconWidth();
+    //int h = icon.getIconHeight();
+
+    JButton b = new JButton(icon);
+    int centeredX = (GamePanel.SCREEN_W / 2) - (w / 2);
+    b.setBounds(centeredX, y, w, h);
+    
+    // 2. Remove all default Java styling so ONLY the PNG shows
+    b.setBorderPainted(false);
+    b.setContentAreaFilled(false);
+    b.setFocusPainted(false);
+    b.setOpaque(false);
+    b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+    // 3. Optional: Add a "Hover" effect if you have a second PNG
+    // b.setRolloverIcon(new ImageIcon("res/btn_hover.png"));
+    
+    return b;
+}
 }

@@ -35,6 +35,10 @@ public class GameCanvas extends JPanel implements Runnable {
     // ── Ink ───────────────────────────────────────────────────────────────────
     public int[][] inkGrid = new int[maxScreenRow][maxScreenCol];
 
+    // --- YOUR NEW DEBUG SETTINGS ---
+    //public boolean debugMode = true; 
+    //public int secondsLeft = debugMode ? 5 : 120;
+
     // ── Timer ─────────────────────────────────────────────────────────────────
     public int secondsLeft = 120;
     private long timerAccumulator = 0;
@@ -90,6 +94,7 @@ public class GameCanvas extends JPanel implements Runnable {
 
     private void initGame() {
         inkGrid          = new int[maxScreenRow][maxScreenCol];
+        //secondsLeft      = debugMode ? 5 : 120;
         secondsLeft      = 120;
         gameOver         = false;
         timerAccumulator = 0;
