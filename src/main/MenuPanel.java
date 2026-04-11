@@ -15,7 +15,9 @@ import javax.swing.*;
  */
 public final class MenuPanel extends JPanel {
 
-    private Clip bgMusic;
+    private static Clip bgMusic;
+    private static boolean isMutedGlobal = false;
+    private static int lastVolume = 50;
 
     // --- OPTIONS OVERLAY FIELDS ---
     private JPanel optionsPanel;
@@ -467,7 +469,7 @@ public final class MenuPanel extends JPanel {
             FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
             
             // Get slider value (0-100) and convert to a 0.0 to 1.0 range
-            float sliderVal = volumeSlider.getValue() / 100f;
+            float sliderVal = lastVolume / 100f;
             
             // Convert linear scale to Decibels (Logarithmic)
             // This makes the slider feel "natural" to the human ear
@@ -492,91 +494,103 @@ public final class MenuPanel extends JPanel {
 }
 
     public void playMenuMusic(String soundFile) {
-    // 1. Check if bgMusic is already running. 
-    // If it is, "return" (stop here) so we don't start a second copy.
-    if (bgMusic != null && bgMusic.isRunning()) {
-        return; 
+        // 1. If music is already playing, DON'T start a second one!
+        if (bgMusic != null && bgMusic.isRunning()) {
+            return; 
+        }
+
+        // READ THE GLOBAL MUTE STATE HERE
+        if (isMutedGlobal) {
+            return;
+        }
+
+        try {
+            File file = new File("res/" + soundFile);
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
+            
+            if (bgMusic != null) {
+                bgMusic.close();
+            }
+            
+            bgMusic = AudioSystem.getClip();
+            bgMusic.open(audioIn);
+
+            // This method reads 'lastVolume', clearing your warning
+            updateVolume(); 
+
+            bgMusic.loop(Clip.LOOP_CONTINUOUSLY); 
+            bgMusic.start();
+        } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+            System.err.println("Music Error: " + e.getMessage());
+        }
     }
-
-    try {
-        File file = new File("res/" + soundFile);
-        AudioInputStream audioIn = AudioSystem.getAudioInputStream(file);
-        bgMusic = AudioSystem.getClip();
-        bgMusic.open(audioIn);
-
-        FloatControl gainControl = (FloatControl) bgMusic.getControl(FloatControl.Type.MASTER_GAIN);
-        gainControl.setValue(-15.0f); 
-
-        bgMusic.loop(Clip.LOOP_CONTINUOUSLY); 
-        bgMusic.start();
-    } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
-        System.err.println("Music Error: " + e.getMessage());
-    }
-}
 
     private void setupOptionsPanel() {
-    optionsPanel = new JPanel() {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (optionsBG != null) {
-                g.drawImage(optionsBG, 0, 0, getWidth(), getHeight(), this);
+        optionsPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (optionsBG != null) {
+                    g.drawImage(optionsBG, 0, 0, getWidth(), getHeight(), this);
+                }
             }
-        }
-    };
-    
-    optionsPanel.setLayout(null);
-    optionsPanel.setOpaque(false);
-    optionsPanel.setVisible(false); // Start hidden
-    
-    // Position it in the center of the screen
-    int pW = 400; int pH = 300;
-    optionsPanel.setBounds((getPreferredSize().width - pW)/2, (getPreferredSize().height - pH)/2, pW, pH);
+        };
+        
+        optionsPanel.setLayout(null);
+        optionsPanel.setOpaque(false);
+        optionsPanel.setVisible(false);
+        
+        int pW = 400; int pH = 300;
+        optionsPanel.setBounds((getPreferredSize().width - pW)/2, (getPreferredSize().height - pH)/2, pW, pH);
 
-    // Initialize Checkboxes
-    musicMute = new JCheckBox("Mute Music");
-    musicMute.setBounds(50, 70, 300, 30);
-    musicMute.setForeground(Color.BLACK);
-    musicMute.setOpaque(false);
-    musicMute.addActionListener(e -> {
-        if (musicMute.isSelected()) bgMusic.stop(); 
-        else bgMusic.start();
-    });
+        // 1. Initialize Checkbox with the GLOBAL state
+        musicMute = new JCheckBox("Mute Music", isMutedGlobal);
+        musicMute.setBounds(50, 70, 300, 30);
+        musicMute.setForeground(Color.BLACK);
+        musicMute.setOpaque(false);
 
-    sfxMute = new JCheckBox("Mute SFX");
-    sfxMute.setBounds(50, 110, 300, 30);
-    sfxMute.setForeground(Color.BLACK);
-    sfxMute.setOpaque(false);
+        musicMute.addActionListener(e -> {
+            isMutedGlobal = musicMute.isSelected(); 
+            if (bgMusic != null) {
+                if (isMutedGlobal) {
+                    bgMusic.stop(); 
+                } else {
+                    updateVolume();
+                    bgMusic.start();
+                    bgMusic.loop(Clip.LOOP_CONTINUOUSLY);
+                }
+            }
+        });
 
-    // Initialize Slider
-    volumeSlider = new JSlider(0, 100, 50);
-    volumeSlider.setUI(new CustomSliderUI(volumeSlider)); // We'll add the UI class below
-    volumeSlider.setBounds(50, 170, 300, 40);
-    volumeSlider.setOpaque(false);
+        sfxMute = new JCheckBox("Mute SFX");
+        sfxMute.setBounds(50, 110, 300, 30);
+        sfxMute.setForeground(Color.BLACK);
+        sfxMute.setOpaque(false);
 
-    volumeSlider.addChangeListener(e -> {
-        if (bgMusic != null && bgMusic.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-            FloatControl gainControl = (FloatControl) bgMusic.getControl(FloatControl.Type.MASTER_GAIN);
-            float sliderVal = volumeSlider.getValue() / 100f;
-            float dB = (float) (Math.log10(Math.max(sliderVal, 0.0001)) * 20.0);
-            dB = Math.max(gainControl.getMinimum(), Math.min(gainControl.getMaximum(), dB));
-            gainControl.setValue(dB);
-        }
-    });
-    
-    // Close Button
-    JButton closeBtn = new JButton("CLOSE");
-    closeBtn.setBounds(150, 230, 100, 30);
-    closeBtn.addActionListener(e -> optionsPanel.setVisible(false));
+        // 2. Initialize Slider with the LAST SAVED VOLUME
+        volumeSlider = new JSlider(0, 100, lastVolume);
+        volumeSlider.setUI(new CustomSliderUI(volumeSlider));
+        volumeSlider.setBounds(50, 170, 300, 40);
+        volumeSlider.setOpaque(false);
 
-    optionsPanel.add(musicMute);
-    optionsPanel.add(sfxMute);
-    optionsPanel.add(volumeSlider);
-    optionsPanel.add(closeBtn);
+        // 3. This is where you "Write" to lastVolume
+        volumeSlider.addChangeListener(e -> {
+            lastVolume = volumeSlider.getValue(); 
+            updateVolume();
+        });
+        
+        JButton closeBtn = new JButton("CLOSE");
+        closeBtn.setBounds(150, 230, 100, 30);
+        closeBtn.addActionListener(e -> optionsPanel.setVisible(false));
 
-    add(optionsPanel); // Add it to the MenuPanel
-    setComponentZOrder(optionsPanel, 0); // Add this line here too
-}
+        optionsPanel.add(musicMute);
+        optionsPanel.add(sfxMute);
+        optionsPanel.add(volumeSlider);
+        optionsPanel.add(closeBtn);
+
+        add(optionsPanel);
+        setComponentZOrder(optionsPanel, 0);
+    }
     // ── Result DTO ────────────────────────────────────────────────────────────
 
     public static class MenuResult {
@@ -587,20 +601,35 @@ public final class MenuPanel extends JPanel {
         public int    level;
     }
 
-    class CustomSliderUI extends javax.swing.plaf.basic.BasicSliderUI {
-    private Image thumbImg = new ImageIcon("res/vol_thumb.png").getImage();
-    private Image trackImg = new ImageIcon("res/vol_track.png").getImage();
-
-    public CustomSliderUI(JSlider b) { super(b); }
-
-    @Override
-    public void paintTrack(Graphics g) {
-        g.drawImage(trackImg, trackRect.x, trackRect.y, trackRect.width, trackRect.height, null);
-    }
-
-    @Override
-    public void paintThumb(Graphics g) {
-        g.drawImage(thumbImg, thumbRect.x, thumbRect.y, thumbRect.width, thumbRect.height, null);
+    private void updateVolume() {
+    if (bgMusic != null && bgMusic.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+        FloatControl gainControl = (FloatControl) bgMusic.getControl(FloatControl.Type.MASTER_GAIN);
+        
+        // READ HAPPENS HERE: 
+        // If slider exists, use it. Otherwise, use the static lastVolume.
+        float sliderVal = (volumeSlider != null) ? volumeSlider.getValue() / 100f : lastVolume / 100f;
+        
+        float dB = (float) (Math.log10(Math.max(sliderVal, 0.0001)) * 20.0);
+        dB = Math.max(gainControl.getMinimum(), Math.min(gainControl.getMaximum(), dB));
+        
+        gainControl.setValue(dB);
     }
 }
+
+    class CustomSliderUI extends javax.swing.plaf.basic.BasicSliderUI {
+        private final Image thumbImg = new ImageIcon("res/vol_thumb.png").getImage();
+        private final Image trackImg = new ImageIcon("res/vol_track.png").getImage();
+
+        public CustomSliderUI(JSlider b) { super(b); }
+
+        @Override
+        public void paintTrack(Graphics g) {
+            g.drawImage(trackImg, trackRect.x, trackRect.y, trackRect.width, trackRect.height, null);
+        }
+
+        @Override
+        public void paintThumb(Graphics g) {
+            g.drawImage(thumbImg, thumbRect.x, thumbRect.y, thumbRect.width, thumbRect.height, null);
+        }
+    }
 }
